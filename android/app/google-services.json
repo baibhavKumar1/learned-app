@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "505376530866",
+    "project_id": "edtech-innovate",
+    "storage_bucket": "edtech-innovate.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:505376530866:android:2638e095936e947da144ab",
+        "android_client_info": {
+          "package_name": "com.example.guide"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "505376530866-tg9trknb4ffsc9gr5fjn20ol875drj0v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.guide",
+            "certificate_hash": "9ef35cf2dc03ccb108dc314bab122e0c4fa99282"
+          }
+        },
+        {
+          "client_id": "505376530866-butr3gqb34tr6ip798950snogeq52umv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChw6q7eNkAUBjzH6BTSVgdW7qAS1S2x0o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "505376530866-butr3gqb34tr6ip798950snogeq52umv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "505376530866-l3bmv647k49sav1lfifc8i903u7i6j40.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.guide"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:505376530866:android:967bdb3cb4442781a144ab",
+        "android_client_info": {
+          "package_name": "com.learned"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "505376530866-butr3gqb34tr6ip798950snogeq52umv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChw6q7eNkAUBjzH6BTSVgdW7qAS1S2x0o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "505376530866-butr3gqb34tr6ip798950snogeq52umv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "505376530866-l3bmv647k49sav1lfifc8i903u7i6j40.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.guide"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
