@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Data Deletion - Learned App</title>
+  <meta name="description" content="Submit a request to permanently delete your account and personal educational data from the Learned App databases in compliance with GDPR, CCPA, and COPPA.">
+  
+  <!-- Modern Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Design Tokens & CSS Variables */
+    :root {
+      --bg-dark: #090b11;
+      --bg-card: rgba(15, 22, 42, 0.65);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary-glow: radial-gradient(circle at 50% -20%, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 60%);
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --error-color: #ef4444;
+      --success-glow: rgba(34, 197, 94, 0.2);
+      --success-border: rgba(34, 197, 94, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      background-image: var(--primary-glow);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient background glowing blobs */
+    .ambient-blob-1 {
+      position: absolute;
+      top: 10%;
+      left: 15%;
+      width: 300px;
+      height: 300px;
+      background: rgba(99, 102, 241, 0.15);
+      filter: blur(100px);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .ambient-blob-2 {
+      position: absolute;
+      bottom: 10%;
+      right: 15%;
+      width: 400px;
+      height: 400px;
+      background: rgba(168, 85, 247, 0.1);
+      filter: blur(120px);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Container Card with Glassmorphism */
+    .form-container {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 540px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      position: relative;
+      z-index: 2;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+    }
+
+    .form-container:hover {
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.05);
+      transform: translateY(-2px);
+    }
+
+    /* Header styling */
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #a5b4fc;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.25;
+      background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Form fields and elements */
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    select,
+    textarea {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+      transition: all 0.3s ease;
+      -webkit-appearance: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    /* custom styling for select dropdown arrow */
+    .select-wrapper {
+      position: relative;
+    }
+
+    .select-wrapper::after {
+      content: '↓';
+      font-size: 12px;
+      color: var(--text-muted);
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* Checkbox list container */
+    .checkbox-list {
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .checkbox-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+
+    .checkmark {
+      height: 18px;
+      width: 18px;
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      margin-right: 12px;
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.2s ease;
+      margin-top: 1px;
+    }
+
+    .checkbox-item:hover input ~ .checkmark {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent);
+    }
+
+    .checkbox-item input:checked ~ .checkmark {
+      background-color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .checkmark::after {
+      content: "";
+      position: absolute;
+      display: none;
+      left: 5px;
+      top: 2px;
+      width: 5px;
+      height: 9px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .checkbox-item input:checked ~ .checkmark::after {
+      display: block;
+    }
+
+    .checkbox-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      user-select: none;
+    }
+
+    .checkbox-label strong {
+      color: var(--text-main);
+    }
+
+    /* Submit Button */
+    button[type="submit"] {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    button[type="submit"]:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+    }
+
+    button[type="submit"]:active {
+      transform: translateY(1px);
+    }
+
+    /* Back Link */
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 3px solid #ffffff;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+      display: none;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Success State Card */
+    .success-card {
+      display: none;
+      text-align: center;
+      animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      background: var(--success-glow);
+      border: 1px solid var(--success-border);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      color: #4ade80;
+      font-size: 32px;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+    }
+
+    .success-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+
+    .success-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .ticket-id {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 15px;
+      color: #a5b4fc;
+      display: inline-block;
+      letter-spacing: 1px;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .form-container {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Blobs -->
+  <div class="ambient-blob-1"></div>
+  <div class="ambient-blob-2"></div>
+
+  <!-- Glassmorphic Card Container -->
+  <div class="form-container" id="widget-container">
+    
+    <!-- Primary Request Form -->
+    <div id="deletion-form-wrapper">
+      <div class="header">
+        <span class="logo-badge">Learned App</span>
+        <h1 id="form-heading">Data Deletion Request</h1>
+        <p class="subtitle">Enter your account details below. Deleting your account is permanent and cannot be undone.</p>
+      </div>
+
+      <form id="deletion-form" onsubmit="handleRequestSubmit(event)">
+        <!-- Full Name -->
+        <div class="form-group">
+          <label for="user-fullname">Full Name</label>
+          <input type="text" id="user-fullname" name="fullname" placeholder="e.g. Rahul Sharma" required autocomplete="name">
+        </div>
+
+        <!-- Registered Email -->
+        <div class="form-group">
+          <label for="user-email">Registered Email Address</label>
+          <input type="email" id="user-email" name="email" placeholder="e.g. rahul@example.com" required autocomplete="email">
+        </div>
+
+        <!-- Role Select -->
+        <div class="form-group">
+          <label for="user-role">Account Role</label>
+          <div class="select-wrapper">
+            <select id="user-role" name="role" required>
+              <option value="" disabled selected>Select your role...</option>
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Reason for deletion -->
+        <div class="form-group">
+          <label for="user-reason">Reason for Deletion (Optional)</label>
+          <textarea id="user-reason" name="reason" placeholder="How can we improve? (e.g. finished exams, privacy concerns...)"></textarea>
+        </div>
+
+        <!-- Confirmations / Acknowledgements -->
+        <div class="checkbox-list">
+          <label style="margin-bottom: 12px; font-size: 11px;">Required Acknowledgements</label>
+          
+          <label class="checkbox-item" for="confirm-checkbox-delete">
+            <input type="checkbox" id="confirm-checkbox-delete" required>
+            <span class="checkmark"></span>
+            <span class="checkbox-label">I understand that my **profile, XP, progression metrics, and uploads** will be permanently deleted.</span>
+          </label>
+
+          <label class="checkbox-item" for="confirm-checkbox-wallet">
+            <input type="checkbox" id="confirm-checkbox-wallet" required>
+            <span class="checkmark"></span>
+            <span class="checkbox-label">I understand that any remaining **wallet credits or active course escrows** will be forfeited immediately.</span>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="submit-request-btn">
+          <span class="spinner" id="btn-spinner"></span>
+          <span id="btn-text">Submit Deletion Request</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Success Screen Content -->
+    <div id="success-screen-wrapper" class="success-card">
+      <div class="success-icon">✓</div>
+      <h2 class="success-title">Request Submitted</h2>
+      <p class="success-desc">
+        We have received your request to delete the account associated with <strong id="success-email-display">your email</strong>. 
+        A confirmation link has been sent to your email address. You must click that link within 24 hours to authorize the deletion.
+      </p>
+      <div style="margin-bottom: 24px;">
+        <span style="display: block; font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Your Request ID</span>
+        <div class="ticket-id" id="request-ticket-id">LD-XXXXX-XXXX</div>
+      </div>
+      <p class="subtitle">Once confirmed, the data removal process will complete within 30 days.</p>
+    </div>
+
+    <!-- Back Link (footer navigation) -->
+    <a href="PRIVACY_POLICY.md" class="back-link" id="nav-back-link">← Return to Privacy Policy</a>
+  </div>
+
+  <script>
+    function generateTicketId() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let part1 = '';
+      let part2 = '';
+      for (let i = 0; i < 4; i++) {
+        part1 += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      for (let i = 0; i < 4; i++) {
+        part2 += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return `LD-${part1}-${part2}`;
+    }
+
+    function handleRequestSubmit(event) {
+      event.preventDefault();
+
+      const btn = document.getElementById('submit-request-btn');
+      const spinner = document.getElementById('btn-spinner');
+      const text = document.getElementById('btn-text');
+      const emailInput = document.getElementById('user-email').value;
+
+      // Disable inputs and show loading state
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      text.innerText = 'Processing Request...';
+
+      // Simulate API verification call
+      setTimeout(() => {
+        // Generate random Ticket ID
+        const ticketId = generateTicketId();
+
+        // Update displays
+        document.getElementById('success-email-display').innerText = emailInput;
+        document.getElementById('request-ticket-id').innerText = ticketId;
+
+        // Transition views
+        document.getElementById('deletion-form-wrapper').style.display = 'none';
+        document.getElementById('success-screen-wrapper').style.display = 'block';
+        document.getElementById('nav-back-link').innerText = '← Return to Home';
+        document.getElementById('nav-back-link').href = '#';
+      }, 1500);
+    }
+  </script>
+</body>
+</html>

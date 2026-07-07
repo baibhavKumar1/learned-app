@@ -133,7 +133,7 @@ class AppTheme {
         primary: darkPrimary,
         secondary: darkSecondary,
         surface: darkSurface,
-        onPrimary: Colors.white,
+        onPrimary: Colors.black,
         onSecondary: Colors.black,
         onSurface: darkTextPrimary,
         outline: Color(0xFF27272A), // Zinc 800
@@ -162,7 +162,7 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: darkPrimary,
-          foregroundColor: Colors.white,
+          foregroundColor: Colors.black,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),

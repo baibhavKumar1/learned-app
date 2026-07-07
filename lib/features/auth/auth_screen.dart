@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -264,8 +265,18 @@ class _AuthScreenState extends State<AuthScreen> {
       borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
     );
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.dark : Brightness.light,
+        statusBarBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: isDark ? Brightness.dark : Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.primary,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -279,15 +290,15 @@ class _AuthScreenState extends State<AuthScreen> {
                       'assets/logo.svg',
                       width: 100,
                       height: 100,
-                      colorFilter: const ColorFilter.mode(
-                          Colors.white, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(
+                          Theme.of(context).colorScheme.onPrimary, BlendMode.srcIn),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'EdTech Innovate',
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                     ),
@@ -422,6 +433,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

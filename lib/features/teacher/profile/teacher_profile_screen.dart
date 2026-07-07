@@ -106,6 +106,108 @@ class TeacherProfileScreen extends StatelessWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.gavel_outlined),
+            title: const Text('Privacy Policy & Terms'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Privacy Policy & Terms'),
+                  content: const SingleChildScrollView(
+                    child: Text(
+                      'Welcome to the Learned App. We are committed to protecting your privacy.\n\n'
+                      '1. Data Collection: We collect account data (name, email) and preferences to personalize learning.\n\n'
+                      '2. Data Usage: Your data helps route users, manage payouts, and answer doubts via AI.\n\n'
+                      '3. Third Parties: Authentication is managed via Firebase Auth, payments via billing stores.\n\n'
+                      '4. Your Rights: You can request account and data deletion at any time under your profile settings.\n\n'
+                      'Full Privacy Policy details are available on our hosted website or via developer documentation.',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    )
+                  ],
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.delete_forever_outlined, color: Theme.of(context).colorScheme.error),
+            title: Text('Delete Account', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete Account?'),
+                  content: const Text(
+                    'Are you sure you want to permanently delete your account? '
+                    'This action cannot be undone. All your progress, course access, and profile data will be permanently wiped.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.pop(context); // Close dialog
+                        try {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user != null) {
+                            await user.delete();
+                            if (context.mounted) {
+                              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Account permanently deleted.')),
+                              );
+                            }
+                          }
+                        } on FirebaseAuthException catch (e) {
+                          if (e.code == 'requires-recent-login') {
+                            if (context.mounted) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Re-authentication Required'),
+                                  content: const Text(
+                                    'For security reasons, you must sign out and sign back in before you can delete your account.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('OK'),
+                                    )
+                                  ],
+                                ),
+                              );
+                            }
+                          } else {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: ${e.message}')),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error deleting account: $e')),
+                            );
+                          }
+                        }
+                      },
+                      child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          ListTile(
             leading: Icon(Icons.logout, color: Theme.of(context).colorScheme.error),
             title: Text('Sign Out', style: TextStyle(color: Theme.of(context).colorScheme.error)),
             onTap: () async {

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -202,18 +203,21 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
                 border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)),
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.tune, size: 16, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 8),
-                  Text(
-                    _isFiltered
-                        ? 'Preferences: $_userClass • ${_userSubjects.join(", ")}'
-                        : 'No match for $_userClass • ${_userSubjects.join(", ")} (Showing all courses)',
-                    style: TextStyle(
-                      fontSize: 12, 
-                      color: Theme.of(context).colorScheme.primary, 
-                      fontWeight: FontWeight.w600
+                  Expanded(
+                    child: Text(
+                      _isFiltered
+                          ? 'Preferences: $_userClass • ${_userSubjects.join(", ")}'
+                          : 'No match for $_userClass • ${_userSubjects.join(", ")} (Showing all courses)',
+                      style: TextStyle(
+                        fontSize: 12, 
+                        color: Theme.of(context).colorScheme.primary, 
+                        fontWeight: FontWeight.w600
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -452,45 +456,98 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
     final hasPlan = _userPlan != null && _userPlan!.isNotEmpty;
     final isUnlocked = isFree || hasPlan;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-        borderRadius: BorderRadius.circular(16),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+      child: Stack(
+        alignment: Alignment.centerRight,
+        children: [
+          // The Ribbon (red for PDF)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: const BoxDecoration(
+                color: Colors.redAccent,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(8),
+                  topRight: Radius.circular(12),
+                ),
+                boxShadow: [
+                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(-2, 2)),
+                ],
+              ),
+              child: const Text(
+                'PDF',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
           ),
-          child: Icon(Icons.picture_as_pdf, color: Theme.of(context).colorScheme.secondary),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        trailing: IconButton(
-          icon: Icon(isUnlocked ? Icons.download : Icons.lock),
-          color: isUnlocked ? Theme.of(context).colorScheme.primary : Colors.amber,
-          onPressed: () async {
-            if (!isUnlocked) {
-              _showSubscriptionDialog(context);
-              return;
-            }
-            final url = pdf['pdfUrl'] as String?;
-            if (url != null && url.isNotEmpty) {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No PDF file associated with this course.')),
-              );
-            }
-          },
-        ),
+          // The Text Content
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0, top: 16.0, right: 60.0, bottom: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          // Download/Lock Icon Button
+          Positioned(
+            right: 12,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: isUnlocked 
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+                        : Colors.amber.withValues(alpha: 0.1),
+                  ),
+                  icon: Icon(isUnlocked ? Icons.download : Icons.lock, 
+                             color: isUnlocked ? Theme.of(context).colorScheme.primary : Colors.amber),
+                  onPressed: () async {
+                    if (!isUnlocked) {
+                      _showSubscriptionDialog(context);
+                      return;
+                    }
+                    final url = pdf['pdfUrl'] as String?;
+                    if (url != null && url.isNotEmpty) {
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No PDF file associated with this course.')),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

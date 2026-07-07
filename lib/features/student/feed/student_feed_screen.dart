@@ -123,9 +123,13 @@ class _StudentFeedScreenState extends State<StudentFeedScreen> {
               },
             ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Your Learning Trail',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+            style: TextStyle(
+              fontSize: 20, 
+              fontWeight: FontWeight.bold, 
+              color: Theme.of(context).colorScheme.primary
+            ),
           ),
           const SizedBox(height: 16),
           if (attempted.isEmpty)
@@ -304,7 +308,10 @@ class _StudentFeedScreenState extends State<StudentFeedScreen> {
               question,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 14, 
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 12),
             const Divider(),
@@ -485,7 +492,28 @@ class _FeedDetailScreenState extends State<FeedDetailScreen> {
     }
   }
 
-  Future<void> _voteExplanation(String docId, String voteType) async {
+  final Set<String> _localVotedAttempts = {};
+
+  Future<void> _voteExplanation(String docId, String voteType, String authorId) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == authorId) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You cannot vote on your own explanation!')));
+      }
+      return;
+    }
+    final voteKey = '${docId}_$voteType';
+    if (_localVotedAttempts.contains(voteKey)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You have already voted on this!')));
+      }
+      return;
+    }
+
+    setState(() {
+      _localVotedAttempts.add(voteKey);
+    });
+
     try {
       await FirebaseFirestore.instance
           .collection('challenge_attempts')
@@ -1004,15 +1032,15 @@ class _FeedDetailScreenState extends State<FeedDetailScreen> {
             const SizedBox(height: 12),
             const Divider(height: 1),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 const Text('Vote:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                const SizedBox(width: 8),
-                _voteTag(docId, 'helpful', '👍 Helpful (${votes["helpful"]})', Colors.blue),
-                const SizedBox(width: 8),
-                _voteTag(docId, 'clear', '✨ Clear (${votes["clear"]})', Colors.amber),
-                const SizedBox(width: 8),
-                _voteTag(docId, 'smart', '🎯 Smart (${votes["smart"]})', Colors.purple),
+                _voteTag(docId, 'helpful', '👍 Helpful (${votes["helpful"]})', Colors.blue, data['studentId'] as String?),
+                _voteTag(docId, 'clear', '✨ Clear (${votes["clear"]})', Colors.amber, data['studentId'] as String?),
+                _voteTag(docId, 'smart', '🎯 Smart (${votes["smart"]})', Colors.purple, data['studentId'] as String?),
               ],
             ),
           ],
@@ -1021,9 +1049,9 @@ class _FeedDetailScreenState extends State<FeedDetailScreen> {
     );
   }
 
-  Widget _voteTag(String docId, String type, String label, Color color) {
+  Widget _voteTag(String docId, String type, String label, Color color, String? authorId) {
     return GestureDetector(
-      onTap: () => _voteExplanation(docId, type),
+      onTap: () => _voteExplanation(docId, type, authorId ?? ''),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(

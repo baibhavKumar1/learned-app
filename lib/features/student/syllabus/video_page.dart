@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/player/global_player_service.dart';
 import 'dart:async';
+import 'dart:ui';
 
 class VideoPage extends StatefulWidget {
   final String docId;
@@ -187,6 +189,9 @@ class _VideoPageState extends State<VideoPage> {
             child: CustomVideoPlayer(
               key: _videoPlayerKey,
               videoUrl: widget.videoUrl,
+              title: widget.topicTitle,
+              chapter: widget.chapterTitle,
+              docId: widget.docId,
             ),
           ),
         ),
@@ -195,7 +200,7 @@ class _VideoPageState extends State<VideoPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.topicTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text(widget.topicTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -204,6 +209,9 @@ class _VideoPageState extends State<VideoPage> {
             CustomVideoPlayer(
               key: _videoPlayerKey,
               videoUrl: widget.videoUrl,
+              title: widget.topicTitle,
+              chapter: widget.chapterTitle,
+              docId: widget.docId,
             ),
             Padding(
               padding: const EdgeInsets.all(20.0),
@@ -242,7 +250,7 @@ class _VideoPageState extends State<VideoPage> {
                   const SizedBox(height: 8),
                   Text(
                     widget.description,
-                    style: const TextStyle(color: Colors.black87, height: 1.4),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87), height: 1.4),
                   ),
                   const SizedBox(height: 24),
 
@@ -252,32 +260,89 @@ class _VideoPageState extends State<VideoPage> {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 12),
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        alignment: Alignment.centerRight,
+                        children: [
+                          // The Ribbon
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: const BoxDecoration(
+                                color: Colors.redAccent,
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(8),
+                                  topRight: Radius.circular(12),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(-2, 2)),
+                                ],
+                              ),
+                              child: const Text(
+                                'PDF',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
                           ),
-                          child: const Icon(Icons.picture_as_pdf, color: Colors.red),
-                        ),
-                        title: Text(widget.pdfFileName ?? 'Lecture Note PDF', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: const Text('Formula sheet & solved examples'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.download),
-                          onPressed: () async {
-                            final uri = Uri.parse(widget.pdfUrl!);
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                            }
-                          },
-                        ),
+                          // The Text Content
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16.0, top: 16.0, right: 60.0, bottom: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.pdfFileName ?? 'Lecture Note PDF',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Formula sheet & solved examples',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Positioned(
+                            right: 12,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
+                                child: Material(
+                                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
+                                  child: InkWell(
+                                    onTap: () async {
+                                      final uri = Uri.parse(widget.pdfUrl!);
+                                      if (await canLaunchUrl(uri)) {
+                                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.download, size: 20),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -409,7 +474,7 @@ class _VideoPageState extends State<VideoPage> {
                         const SizedBox(height: 4),
                         Text(
                           data['commentText'] ?? '',
-                          style: const TextStyle(fontSize: 13, color: Colors.black87),
+                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87)),
                         ),
                       ],
                     ),
@@ -451,10 +516,16 @@ class _VideoPageState extends State<VideoPage> {
 // ----------------------------------------------------
 class CustomVideoPlayer extends StatefulWidget {
   final String videoUrl;
+  final String title;
+  final String docId;
+  final String chapter;
 
   const CustomVideoPlayer({
     super.key,
     required this.videoUrl,
+    required this.title,
+    required this.docId,
+    required this.chapter,
   });
 
   @override
@@ -479,29 +550,34 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     _initializeVideo();
   }
 
-  void _initializeVideo() {
+  void _initializeVideo() async {
     if (widget.videoUrl.isNotEmpty) {
-      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      final player = GlobalPlayerService();
       
-      _controller!.initialize().then((_) {
-        if (mounted) {
-          _controller!.addListener(_videoListener);
-          setState(() {
-            _isInitialized = true;
-            _totalDurationMs = _controller!.value.duration.inMilliseconds.toDouble();
-          });
-          _controller!.play();
-          _startPositionTimer();
-          _startControlsTimer();
-        }
-      }).catchError((error) {
-        if (mounted) {
-          setState(() {
-            _isError = true;
-          });
-        }
-        debugPrint('Video Player Init Error: $error');
-      });
+      await player.play(
+        url: widget.videoUrl, 
+        title: widget.title, 
+        docId: widget.docId,
+        chapter: widget.chapter,
+      );
+      
+      if (!mounted) return;
+      
+      _controller = player.controller;
+      
+      if (_controller != null) {
+        _controller!.addListener(_videoListener);
+        setState(() {
+          _isInitialized = true;
+          _totalDurationMs = _controller!.value.duration.inMilliseconds.toDouble();
+        });
+        _startPositionTimer();
+        _startControlsTimer();
+      } else {
+        setState(() {
+          _isError = true;
+        });
+      }
     }
   }
 
@@ -552,7 +628,7 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
   @override
   void dispose() {
     _controller?.removeListener(_videoListener);
-    _controller?.dispose();
+    // DO NOT DISPOSE THE CONTROLLER HERE so it keeps playing in the background
     _controlsTimer?.cancel();
     _positionTimer?.cancel();
     super.dispose();
