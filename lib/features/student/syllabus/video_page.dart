@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/player/global_player_service.dart';
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class VideoPage extends StatefulWidget {
   final String docId;
@@ -581,6 +583,120 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
     }
   }
 
+  void _generateNote(BuildContext context) async {
+    _controller?.pause();
+    final position = await _controller?.position;
+    final currentSeconds = position?.inSeconds ?? 0;
+    final timeStr = position != null ? '${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')}' : '0:00';
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Extracting context & saving insight...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // 1. Fetch contextual segment
+      String contextText = 'The user is learning a concept at this timestamp. Generate a helpful study note.';
+      final segmentsQuery = await FirebaseFirestore.instance
+          .collection('transcript_segments')
+          .where('docId', isEqualTo: widget.docId)
+          .where('startSec', isLessThanOrEqualTo: currentSeconds)
+          .orderBy('startSec', descending: true)
+          .limit(1)
+          .get();
+          
+      if (segmentsQuery.docs.isNotEmpty) {
+        final seg = segmentsQuery.docs.first.data();
+        final int endSec = seg['endSec'] ?? 0;
+        if (currentSeconds <= endSec) {
+          final summary = seg['summary'] ?? '';
+          final topic = seg['topic'] ?? '';
+          if (summary.isNotEmpty) {
+            contextText = 'Topic: $topic. $summary';
+          }
+        }
+      }
+
+      // 2. Generate Note via Genkit
+      final callable = FirebaseFunctions.instance.httpsCallable('generateContextualNote');
+      final result = await callable.call({
+        'transcriptSegment': contextText,
+      });
+      
+      final data = result.data as Map<String, dynamic>;
+      final title = data['title'] ?? 'AI Note';
+      final markdownNote = data['markdownNote'] ?? 'Summary could not be generated.';
+
+      // 3. Save to Firestore
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('student_notes').add({
+          'studentId': uid,
+          'videoId': widget.docId,
+          'timestamp': currentSeconds,
+          'title': title,
+          'content': markdownNote,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (context.mounted) {
+        Navigator.pop(context); // close loading
+        
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          builder: (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Insight Saved!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                  ],
+                ),
+                Text('Timestamp: $timeStr', style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 24),
+                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: MarkdownBody(
+                      data: markdownNote,
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(fontSize: 15, height: 1.5),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save insight: $e')));
+      }
+    }
+  }
+
   void _videoListener() {
     if (_controller != null && _controller!.value.isInitialized) {
       final pos = _controller!.value.position.inMilliseconds.toDouble();
@@ -726,6 +842,23 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
 
     return Stack(
       children: [
+        // Floating "Save Insight" Button at top right
+        Positioned(
+          top: 16,
+          right: 16,
+          child: FilledButton.icon(
+            onPressed: () => _generateNote(context),
+            icon: const Icon(Icons.auto_awesome, size: 16),
+            label: const Text('Save Insight', style: TextStyle(fontSize: 12)),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+            ),
+          ),
+        ),
+
         // Dark gradient overlay at the bottom
         Positioned(
           left: 0,

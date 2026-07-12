@@ -9,6 +9,7 @@ import '../profile/teacher_profile_screen.dart';
 import 'live_attempts_monitor_screen.dart';
 import 'models/dashboard_models.dart';
 import 'services/teacher_dashboard_service.dart';
+import '../community/youtube_comments_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -129,6 +130,15 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           labelStyle: const TextStyle(fontWeight: FontWeight.bold),
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Poll creation coming soon...')));
+          },
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.youtube_searched_for, color: Colors.white),
+          backgroundColor: Colors.red,
+          label: 'YouTube AutoFunnel',
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const YouTubeCommentsScreen()));
           },
         ),
       ],

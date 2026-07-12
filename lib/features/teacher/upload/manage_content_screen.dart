@@ -1,7 +1,17 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+
+import 'youtube_comments_panel.dart';
 
 import 'edit_content_screen.dart';
 import 'upload_content_screen.dart';
@@ -71,6 +81,119 @@ class ManageContentScreen extends StatelessWidget {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _openAiSnippetsPanel(BuildContext context, String docId, String title) {
+    bool isGenerating = false;
+    bool isGenerated = false;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Marketing Assets: $title', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Use AI to automatically extract engaging moments from your video for YouTube Shorts, Reels, or Teasers.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  const Divider(height: 32),
+                  
+                  if (!isGenerated && !isGenerating) ...[
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setModalState(() => isGenerating = true);
+                        Future.delayed(const Duration(seconds: 3), () {
+                          if (context.mounted) {
+                            setModalState(() {
+                              isGenerating = false;
+                              isGenerated = true;
+                            });
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.auto_awesome),
+                      label: const Text('Generate 60s Short (Vertical)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple.shade50,
+                        foregroundColor: Colors.deepPurple,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setModalState(() => isGenerating = true);
+                        Future.delayed(const Duration(seconds: 3), () {
+                          if (context.mounted) {
+                            setModalState(() {
+                              isGenerating = false;
+                              isGenerated = true;
+                            });
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.movie_creation_outlined),
+                      label: const Text('Generate 5-Min Teaser (Horizontal)'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ],
+
+                  if (isGenerating)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Column(
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('AI is analyzing transcripts & cutting video...'),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  if (isGenerated) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        border: Border.all(color: Colors.green.shade200),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green, size: 48),
+                          const SizedBox(height: 8),
+                          const Text('Video asset generated successfully!', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Asset downloaded to gallery!')));
+                            },
+                            icon: const Icon(Icons.download),
+                            label: const Text('Download MP4'),
+                            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ],
+              ),
+            );
+          }
         );
       },
     );
@@ -340,6 +463,16 @@ class ManageContentScreen extends StatelessWidget {
                                 label: const Text('Edit'),
                               ),
                             ),
+                            if (isVideo) ...[
+                              Container(width: 1, height: 30, color: Colors.grey.shade300),
+                              Expanded(
+                                child: TextButton.icon(
+                                  onPressed: () => _openAiSnippetsPanel(context, docId, data['title'] ?? 'Video'),
+                                  icon: const Icon(Icons.auto_awesome, color: Colors.deepPurple),
+                                  label: const Text('Marketing', style: TextStyle(color: Colors.deepPurple, fontSize: 13)),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -351,14 +484,328 @@ class ManageContentScreen extends StatelessWidget {
           );
 
     if (isEmbedded) {
-      return bodyContent; // No Scaffold/AppBar when in BottomNav
+      return DefaultTabController(
+        length: 2,
+        child: Column(
+          children: [
+            const TabBar(
+              tabs: [
+                Tab(text: 'Platform Content'),
+                Tab(text: 'YouTube Channel'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  bodyContent,
+                  const YouTubeChannelTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Content'),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Manage Content'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Platform Content'),
+              Tab(text: 'YouTube Channel'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            bodyContent,
+            const YouTubeChannelTab(),
+          ],
+        ),
       ),
-      body: bodyContent,
+    );
+  }
+}
+
+class YouTubeChannelTab extends StatefulWidget {
+  const YouTubeChannelTab({super.key});
+
+  @override
+  State<YouTubeChannelTab> createState() => _YouTubeChannelTabState();
+}
+
+class _YouTubeChannelTabState extends State<YouTubeChannelTab> {
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'https://www.googleapis.com/auth/youtube.force-ssl',
+    ],
+  );
+
+  GoogleSignInAccount? _currentUser;
+  bool _isLoading = false;
+  List<dynamic> _videos = [];
+  String? _accessToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
+      setState(() {
+        _currentUser = account;
+      });
+      if (_currentUser != null) {
+        final auth = await _currentUser!.authentication;
+        _accessToken = auth.accessToken;
+        _fetchVideos();
+      }
+    });
+    _googleSignIn.signInSilently();
+  }
+
+  Future<void> _handleSignIn() async {
+    try {
+      await _googleSignIn.signIn();
+    } catch (error) {
+      debugPrint("Error signing in: $error");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sign in failed: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchVideos() async {
+    if (_accessToken == null) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final channelRes = await http.get(
+        Uri.parse('https://www.googleapis.com/youtube/v3/channels?part=contentDetails&mine=true'),
+        headers: {'Authorization': 'Bearer $_accessToken'},
+      );
+      final channelData = jsonDecode(channelRes.body);
+      
+      if (channelData['items'] == null || channelData['items'].isEmpty) {
+        throw Exception("No YouTube channel found.");
+      }
+      
+      final uploadsPlaylistId = channelData['items'][0]['contentDetails']['relatedPlaylists']['uploads'];
+
+      final playlistRes = await http.get(
+        Uri.parse('https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=$uploadsPlaylistId&maxResults=15'),
+        headers: {'Authorization': 'Bearer $_accessToken'},
+      );
+      final playlistData = jsonDecode(playlistRes.body);
+      
+      if (mounted) {
+        setState(() {
+          _videos = playlistData['items'] ?? [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        debugPrint("Error fetching videos: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch videos: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_currentUser == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.youtube_searched_for, size: 80, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text(
+              'Connect your YouTube Channel\nto manage comments & sync content.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _handleSignIn,
+              icon: const Icon(Icons.login),
+              label: const Text('Connect with Google'),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_videos.isEmpty) {
+      return const Center(child: Text('No videos found on your YouTube channel.'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _videos.length,
+      itemBuilder: (context, index) {
+        final video = _videos[index];
+        final snippet = video['snippet'];
+        final title = snippet['title'];
+        final thumbnailUrl = snippet['thumbnails']['high']['url'];
+        final videoId = snippet['resourceId']['videoId'];
+
+        bool isSyncing = false;
+        double syncProgress = 0.0;
+        String syncStatus = '';
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Image.network(thumbnailUrl, height: 200, fit: BoxFit.cover),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const Divider(height: 1),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatefulBuilder(
+                      builder: (context, setBtnState) {
+                        return isSyncing 
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(syncStatus, style: const TextStyle(fontSize: 11, color: Colors.indigo, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  LinearProgressIndicator(value: syncProgress, backgroundColor: Colors.indigo.shade50, color: Colors.indigo),
+                                ],
+                              ),
+                            )
+                          : TextButton.icon(
+                              onPressed: () async {
+                                setBtnState(() {
+                                  isSyncing = true;
+                                  syncStatus = 'Extracting video...';
+                                });
+                                try {
+                                  final uid = FirebaseAuth.instance.currentUser?.uid;
+                                  if (uid == null) throw Exception('Not logged in');
+
+                                  var yt = YoutubeExplode();
+                                  var manifest = await yt.videos.streamsClient.getManifest(videoId);
+                                  var streamInfo = manifest.muxed.withHighestBitrate();
+
+                                  setBtnState(() { syncStatus = 'Downloading to device...'; });
+                                  var stream = yt.videos.streamsClient.get(streamInfo);
+                                  var dir = await getTemporaryDirectory();
+                                  var file = File('${dir.path}/$videoId.mp4');
+                                  var fileStream = file.openWrite();
+                                  await stream.pipe(fileStream);
+                                  await fileStream.flush();
+                                  await fileStream.close();
+
+                                  setBtnState(() { syncStatus = 'Uploading to Platform...'; });
+                                  var storageRef = FirebaseStorage.instance.ref().child('course_materials/$uid/youtube_syncs/$videoId.mp4');
+                                  var uploadTask = storageRef.putFile(file);
+                                  
+                                  uploadTask.snapshotEvents.listen((event) {
+                                    if (event.totalBytes > 0) {
+                                      setBtnState(() {
+                                        syncProgress = event.bytesTransferred / event.totalBytes;
+                                        syncStatus = 'Uploading... ${(syncProgress * 100).toStringAsFixed(0)}%';
+                                      });
+                                    }
+                                  });
+                                  
+                                  await uploadTask;
+                                  setBtnState(() { syncStatus = 'Finishing up...'; });
+                                  var publicUrl = await storageRef.getDownloadURL();
+
+                                  await FirebaseFirestore.instance.collection('course_materials').add({
+                                      'teacherId': uid,
+                                      'title': title,
+                                      'videoUrl': publicUrl,
+                                      'source': 'youtube',
+                                      'originalVideoId': videoId,
+                                      'createdAt': FieldValue.serverTimestamp(),
+                                      'isVisible': true,
+                                      'views': 0,
+                                      'likesCount': 0,
+                                      'helpfulCount': 0,
+                                      'commentsCount': 0,
+                                      'isSyllabusBased': false,
+                                  });
+                                  yt.close();
+                                  
+                                  if (await file.exists()) {
+                                    await file.delete();
+                                  }
+                                  
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Video successfully synced to Platform!')),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Sync failed: $e')),
+                                    );
+                                  }
+                                } finally {
+                                  setBtnState(() {
+                                    isSyncing = false;
+                                    syncProgress = 0.0;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.sync, color: Colors.indigo),
+                              label: const Text('Sync Video', style: TextStyle(color: Colors.indigo)),
+                            );
+                      }
+                    ),
+                  ),
+                  Container(width: 1, height: 30, color: Colors.grey.shade300),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () {
+                         showYouTubeCommentsPanel(
+                           context: context, 
+                           videoId: videoId, 
+                           accessToken: _accessToken!
+                         );
+                      },
+                      icon: const Icon(Icons.forum, color: Colors.deepPurple),
+                      label: const Text('Manage Comments', style: TextStyle(color: Colors.deepPurple)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

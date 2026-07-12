@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class InAppVideoPlayerScreen extends StatefulWidget {
   final String videoUrl;
@@ -92,6 +94,91 @@ class _ControlsOverlay extends StatelessWidget {
 
   final VideoPlayerController controller;
 
+  void _generateNote(BuildContext context) async {
+    controller.pause();
+    final position = await controller.position;
+    final timeStr = position != null ? '${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')}' : '0:00';
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Analyzing video frame & context...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('generateContextualNote');
+      // In a full implementation, we would pass the actual frame image as base64
+      // and the actual transcript segment for this timestamp.
+      final result = await callable.call({
+        'transcriptSegment': 'This diagram explains the core architecture of our system. Notice the flow from the client to the load balancer.',
+        // 'imageBase64': '...' 
+      });
+
+      if (context.mounted) {
+        Navigator.pop(context); // close loading
+        
+        final data = result.data as Map<String, dynamic>;
+        
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          builder: (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(data['title'] ?? 'AI Note', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                    Chip(label: Text(timeStr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+                const Divider(),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: MarkdownBody(
+                      data: data['markdownNote'] ?? 'Summary could not be generated.',
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(fontSize: 15, height: 1.5),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Save to Notebook'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // close loading
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to generate note: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -116,6 +203,19 @@ class _ControlsOverlay extends StatelessWidget {
                       ),
                     ),
                   ),
+          ),
+          Positioned(
+            bottom: 40,
+            right: 20,
+            child: FilledButton.icon(
+              onPressed: () => _generateNote(context),
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Save Insight'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+              ),
+            ),
           ),
         ],
       ),

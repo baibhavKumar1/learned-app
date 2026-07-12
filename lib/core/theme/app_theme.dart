@@ -86,6 +86,18 @@ class AppTheme {
           fontWeight: FontWeight.bold,
         ),
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: lightSurface,
+        selectedColor: lightPrimary,
+        secondarySelectedColor: lightPrimary,
+        labelStyle: const TextStyle(color: lightTextPrimary),
+        secondaryLabelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        checkmarkColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: lightPrimary,
@@ -157,6 +169,18 @@ class AppTheme {
           color: darkTextPrimary,
           fontSize: 24,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: darkSurface,
+        selectedColor: darkPrimary,
+        secondarySelectedColor: darkPrimary,
+        labelStyle: const TextStyle(color: darkTextPrimary),
+        secondaryLabelStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        checkmarkColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFF27272A)),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
